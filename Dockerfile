@@ -23,7 +23,7 @@ WORKDIR /app
 COPY --from=build /app/app/build/libs/app-all.jar /app/app.jar
 
 # Set RPC url here (and RPC username/password in config.yaml
-ENV BITCOIN_RPC_URL="http://host.docker.internal:8322"
+ENV BITCOIN_RPC_URL="http://host.docker.internal:8332"
 
 # Expose the application port
 EXPOSE 8080
