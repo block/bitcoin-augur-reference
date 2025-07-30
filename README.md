@@ -175,6 +175,14 @@ Example response:
 }
 ```
 
+## Local Development
+If you'd like to use a local version of [augur](https://github.com/block/bitcoin-augur) within your reference implementation:
+- Within augur, run `bin/gradle shadowJar` to build a fat jar of augur.
+- Copy the file `lib/build/libs/augur.jar` into this reference implementation `app/libs` directory.
+- Change
+  `implementation(libs.augur)` to `implementation(files("libs/augur.jar"))` in the `app/build.gradle.kts` [file](https://github.com/block/bitcoin-augur-reference/blob/main/app/build.gradle.kts).
+- Within the reference implementation, run `bin/gradle build` to build the project with the local version of augur.
+
 ## Project Structure
 
 - `config`: Configuration classes

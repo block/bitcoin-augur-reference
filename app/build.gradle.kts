@@ -32,6 +32,10 @@ dependencies {
     // This dependency is used by the application.
     implementation(libs.guava)
     implementation(libs.okhttp)
+
+    // This dependency is necessary when using a local jar of augur, e.g., implementation(files("libs/augur.jar"))
+    implementation(libs.slf4j.simple)
+
     implementation(libs.jackson.module.kotlin)
     implementation(libs.jackson.databind)
     implementation(libs.jackson.datatype.jsr310)
