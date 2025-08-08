@@ -24,6 +24,7 @@ import xyz.block.augurref.bitcoin.BitcoinRpcClient
 import xyz.block.augurref.persistence.MempoolPersistence
 import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.fixedRateTimer
 
@@ -69,6 +70,36 @@ class MempoolCollector(
    */
   fun getLatestFeeEstimate(): FeeEstimate? {
     return latestFeeEstimate.get()
+  }
+
+  /**
+   * Get the fee estimate for specific date
+   */
+  fun getFeeEstimateForDate(dateTimeUTC: LocalDateTime): FeeEstimate? {
+    val dateTime = dateTimeUTC
+      .atZone(ZoneId.of("UTC")) // Interpret as UTC
+      .withZoneSameInstant(ZoneId.systemDefault())
+      .toLocalDateTime()
+    // Fetch the last day's snapshots
+    logger.debug("Fetching snapshots from the last day")
+    val lastDaySnapshots = persistence.getSnapshots(
+      dateTime.minusDays(1),
+      dateTime,
+    )
+    logger.debug("Retrieved ${lastDaySnapshots.size} snapshots from the last day")
+
+    if (lastDaySnapshots.isNotEmpty()) {
+      // Calculate fee estimate for x blocks
+      logger.debug("Calculating fee estimates")
+      val newFeeEstimate = feeEstimator.calculateEstimates(lastDaySnapshots)
+      return newFeeEstimate
+    } else {
+      logger.warn("No snapshots available for fee estimation")
+    }
+    return FeeEstimate(
+      estimates = emptyMap(),
+      timestamp = dateTime.atZone(ZoneId.of("UTC")).toInstant(),
+    )
   }
 
   /**
