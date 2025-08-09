@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory
 import xyz.block.augur.FeeEstimate
 import xyz.block.augurref.service.MempoolCollector
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.format.DateTimeParseException
 
 /**
  * Data model for fee estimation response
@@ -57,18 +59,42 @@ fun Route.configureFeesEndpoint(mempoolCollector: MempoolCollector) {
 
   get("/fees") {
     logger.info("Received request for fee estimates")
-    val currentEstimate = mempoolCollector.getLatestFeeEstimate()
 
-    if (currentEstimate == null) {
-      logger.warn("No fee estimates available yet")
+    // Extract date param from query parameters
+    val dateParam = call.request.queryParameters["date"]
+
+    // Validate and parse the date if provided
+    val date = try {
+      dateParam?.let { LocalDateTime.parse(it) }
+    } catch (e: DateTimeParseException) {
+      logger.warn("Invalid date format: $dateParam")
       call.respondText(
-        "No fee estimates available yet",
+        "Invalid date format. Use YYYY-MM-DDTHH:MM:SS",
+        status = HttpStatusCode.BadRequest,
+        contentType = ContentType.Text.Plain,
+      )
+      return@get
+    }
+
+    // Fetch fee estimate based on date if provided, otherwise use latest
+    val feeEstimate = if (date != null) {
+      logger.info("Fetching fee estimate for date: $date")
+      mempoolCollector.getFeeEstimateForDate(date)
+    } else {
+      logger.info("Fetching latest fee estimate")
+      mempoolCollector.getLatestFeeEstimate()
+    }
+
+    if (feeEstimate == null) {
+      logger.warn("No fee estimates available yet for ${date ?: "latest"}")
+      call.respondText(
+        "No fee estimates available yet for ${date ?: "latest"}",
         status = HttpStatusCode.ServiceUnavailable,
         contentType = ContentType.Text.Plain,
       )
     } else {
       logger.info("Transforming fee estimates for response")
-      val response = transformFeeEstimate(currentEstimate)
+      val response = transformFeeEstimate(feeEstimate)
       logger.debug("Returning fee estimates with ${response.estimates.size} targets")
       call.respond(response)
     }
