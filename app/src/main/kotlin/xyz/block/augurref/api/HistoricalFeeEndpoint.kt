@@ -90,4 +90,95 @@ fun Route.configureHistoricalFeesEndpoint(mempoolCollector: MempoolCollector) {
       call.respond(response)
     }
   }
+
+  get("/historical_fees") {
+    logger.info("Received request for historical fee estimates")
+
+    // Extract params from query start_date, end_date, interval (seconds)
+    val startDateParam = call.request.queryParameters["start_date"]
+    val endDateParam = call.request.queryParameters["end_date"]
+    val intervalParam = call.request.queryParameters["interval"]
+    val interval: Int = intervalParam?.toIntOrNull() ?: 3600
+
+    if (startDateParam == null) {
+      call.respondText(
+        "start_date parameter is required",
+        status = HttpStatusCode.BadRequest,
+        contentType = ContentType.Text.Plain,
+      )
+      return@get
+    }
+
+    if (endDateParam == null) {
+      call.respondText(
+        "end_date parameter is required",
+        status = HttpStatusCode.BadRequest,
+        contentType = ContentType.Text.Plain,
+      )
+      return@get
+    }
+
+    // Validate and parse the date
+    val startDate = try {
+      startDateParam?.let { LocalDateTime.parse(it) }
+    } catch (e: DateTimeParseException) {
+      logger.warn("Invalid date format: $startDateParam")
+      call.respondText(
+        "Invalid date format. Use YYYY-MM-DDTHH:MM:SS",
+        status = HttpStatusCode.BadRequest,
+        contentType = ContentType.Text.Plain,
+      )
+      return@get
+    }
+    val endDate = try {
+      endDateParam?.let { LocalDateTime.parse(it) }
+    } catch (e: DateTimeParseException) {
+      logger.warn("Invalid date format: $endDateParam")
+      call.respondText(
+        "Invalid date format. Use YYYY-MM-DDTHH:MM:SS",
+        status = HttpStatusCode.BadRequest,
+        contentType = ContentType.Text.Plain,
+      )
+      return@get
+    }
+
+    // Fetch historical fee estimate based on date
+    val feeEstimate = if (startDate != null && endDate != null && interval != null) {
+      logger.info(
+        "Fetching historical fee estimate for start_date: $startDate to " +
+          "end_date: $endDate for intervals: $interval seconds",
+      )
+      mempoolCollector.getFeeEstimateForDateRange(startDate, endDate, interval)
+    } else {
+      logger.warn("internal error")
+      call.respondText(
+        "internal error",
+        status = HttpStatusCode.InternalServerError,
+        contentType = ContentType.Text.Plain,
+      )
+      return@get
+    }
+
+    if (feeEstimate == null) {
+      logger.warn(
+        "No historical fee estimates available for start_date $startDate to " +
+          "end_date: $endDate for interval: $interval seconds",
+      )
+      call.respondText(
+        "No historical fee estimates available for start_date $startDate to " +
+          "end_date: $endDate for interval: $interval seconds",
+        status = HttpStatusCode.ServiceUnavailable,
+        contentType = ContentType.Text.Plain,
+      )
+    } else {
+      var mutableResponse = mutableListOf<FeeEstimateResponse>()
+      logger.info("Transforming historical fee estimates for response")
+      for (estimate in feeEstimate) {
+        val response = transformFeeEstimate(estimate)
+        mutableResponse.add(response)
+      }
+      logger.debug("Returning historical fee estimates")
+      call.respond(mutableResponse)
+    }
+  }
 }
