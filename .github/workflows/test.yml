@@ -1,0 +1,22 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Hermit
+      uses: cashapp/activate-hermit@v1
+      
+    - name: Run tests
+      run: gradle build
+      
