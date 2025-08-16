@@ -26,6 +26,7 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.routing.routing
 import org.slf4j.LoggerFactory
 import xyz.block.augurref.api.configureFeesEndpoint
+import xyz.block.augurref.api.configureHistoricalFeesEndpoint
 import xyz.block.augurref.config.ServerConfig
 import xyz.block.augurref.service.MempoolCollector
 
@@ -58,6 +59,7 @@ class HttpServer(
       // Configure routes
       routing {
         configureFeesEndpoint(mempoolCollector)
+        configureHistoricalFeesEndpoint(mempoolCollector)
       }
     }.start(wait = false)
 

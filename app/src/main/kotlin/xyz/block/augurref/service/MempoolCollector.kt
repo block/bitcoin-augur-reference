@@ -24,6 +24,7 @@ import xyz.block.augurref.bitcoin.BitcoinRpcClient
 import xyz.block.augurref.persistence.MempoolPersistence
 import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.fixedRateTimer
 
@@ -69,6 +70,78 @@ class MempoolCollector(
    */
   fun getLatestFeeEstimate(): FeeEstimate? {
     return latestFeeEstimate.get()
+  }
+
+  fun getFeeEstimateForDateRange(
+    start_date: LocalDateTime,
+    end_date: LocalDateTime,
+    interval: Int,
+  ): List<FeeEstimate>? {
+    // Ensure start_date is not after end_date
+    if (start_date.isAfter(end_date)) {
+      logger.warn("Start date is after end date")
+      return null
+    }
+
+    // Initialize result list to store fee estimates
+    val estimates = mutableListOf<FeeEstimate>()
+    var currentDate = start_date
+
+    // Iterate through the date range with the given interval
+    while (!currentDate.isAfter(end_date)) {
+      logger.debug("Processing fee estimate for $currentDate")
+      val feeEstimate = getFeeEstimateForDate(currentDate)
+
+      // If fee estimate is non-null and has estimates, merge them
+      if (feeEstimate != null && feeEstimate.estimates.isNotEmpty()) {
+        // estimates.putAll(feeEstimate.estimates as Map<Int, BlockTarget>)
+        estimates.add(feeEstimate)
+      } else {
+        logger.debug("No valid fee estimate for $currentDate")
+      }
+
+      // Increment currentDate by interval (in minutes)
+      currentDate = currentDate.plusSeconds(interval.toLong())
+    }
+
+    // Return null if no estimates were collected
+    if (estimates.isEmpty()) {
+      logger.warn("No fee estimates collected for the date range")
+      return null
+    }
+
+    // Return a FeeEstimate with the aggregated estimates
+    return estimates
+  }
+
+  /**
+   * Get the fee estimate for specific date
+   */
+  fun getFeeEstimateForDate(dateTimeUTC: LocalDateTime): FeeEstimate? {
+    val dateTime = dateTimeUTC
+      .atZone(ZoneId.of("UTC")) // Interpret as UTC
+      .withZoneSameInstant(ZoneId.systemDefault())
+      .toLocalDateTime()
+    // Fetch the last day's snapshots
+    logger.debug("Fetching snapshots from the last day")
+    val lastDaySnapshots = persistence.getSnapshots(
+      dateTime.minusDays(1),
+      dateTime,
+    )
+    logger.debug("Retrieved ${lastDaySnapshots.size} snapshots from the last day")
+
+    if (lastDaySnapshots.isNotEmpty()) {
+      // Calculate fee estimate for x blocks
+      logger.debug("Calculating fee estimates")
+      val newFeeEstimate = feeEstimator.calculateEstimates(lastDaySnapshots)
+      return newFeeEstimate
+    } else {
+      logger.warn("No snapshots available for fee estimation")
+    }
+    return FeeEstimate(
+      estimates = emptyMap(),
+      timestamp = dateTime.atZone(ZoneId.of("UTC")).toInstant(),
+    )
   }
 
   /**
