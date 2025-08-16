@@ -57,6 +57,10 @@ dependencies {
     testImplementation(libs.ktor.client.core)
     testImplementation(libs.ktor.client.cio)
     testImplementation(libs.ktor.client.content.negotiation)
+
+    // MockK for mocking dependencies
+    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.0")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
