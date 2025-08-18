@@ -40,7 +40,7 @@ import java.time.Instant
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class FeeEstimateEndpointTest {
+class HistoricalFeeEstimateEndpointTest {
   private val mockMempoolCollector = mockk<MempoolCollector>()
   private val objectMapper = ObjectMapper().apply {
     registerModule(KotlinModule.Builder().build())

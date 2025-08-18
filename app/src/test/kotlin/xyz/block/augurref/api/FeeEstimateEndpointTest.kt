@@ -205,7 +205,6 @@ class FeeEstimateEndpointTest {
     verify { mockMempoolCollector.getLatestFeeEstimateForBlockTarget(2.0) }
   }
 
-
   private fun createMockFeeEstimate(timestamp: Instant): FeeEstimate {
     // Create mock data using the actual augur library structure
     val mockFeeEstimate = mockk<FeeEstimate>()
