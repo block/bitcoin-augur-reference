@@ -1,10 +1,13 @@
 # Augur Reference Implementation
 
-This project serves as a reference implementation of the [augur](https://github.com/block/bitcoin-augur) Bitcoin fee estimation library. It demonstrates how to:
+This project serves as a reference implementation of the [Augur](https://github.com/block/bitcoin-augur) Bitcoin fee estimation library. It demonstrates how to:
 
 - Connect to a Bitcoin Core instance and persist mempool snapshots
 - Calculate fee estimates using Augur's prediction model
 - Expose fee estimates via a REST API
+
+This reference service is intended to showcase the features of the Augur library, and is meant as a tool for exploring the fee estimation data that Augur generates.
+It serves as example code on how to integrate the library into a Kotlin codebase; it is not intended to be used as a production-ready fee estimation service.
 
 ## Features
 
@@ -251,12 +254,12 @@ Example response:
 ```
 
 ## Local Development
-If you'd like to use a local version of [augur](https://github.com/block/bitcoin-augur) within your reference implementation:
-- Within augur, run `bin/gradle shadowJar` to build a fat jar of augur.
+If you'd like to use a local version of [Augur](https://github.com/block/bitcoin-augur) within your reference implementation:
+- Within Augur, run `bin/gradle shadowJar` to build a fat jar of Augur.
 - Copy the file `lib/build/libs/augur.jar` into this reference implementation `app/libs` directory.
 - Change
   `implementation(libs.augur)` to `implementation(files("libs/augur.jar"))` in the `app/build.gradle.kts` [file](https://github.com/block/bitcoin-augur-reference/blob/main/app/build.gradle.kts).
-- Within the reference implementation, run `bin/gradle build` to build the project with the local version of augur.
+- Within the reference implementation, run `bin/gradle build` to build the project with the local version of Augur.
 
 ## Project Structure
 
