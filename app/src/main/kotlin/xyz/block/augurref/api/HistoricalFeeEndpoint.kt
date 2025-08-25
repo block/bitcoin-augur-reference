@@ -76,4 +76,61 @@ fun Route.configureHistoricalFeesEndpoint(mempoolCollector: MempoolCollector) {
       call.respond(response)
     }
   }
+
+  get("/historical_fees") {
+    logger.info("Received request for historical fee estimates")
+
+    // Extract params from query start_timestamp, end_timestamp, interval (seconds)
+    val startTimestampParam = call.request.queryParameters["start_timestamp"]?.toLongOrNull()
+    val endTimestampParam = call.request.queryParameters["end_timestamp"]?.toLongOrNull()
+    val intervalParam = call.request.queryParameters["interval"]
+    val interval: Int = intervalParam?.toIntOrNull() ?: 3600
+
+    if (startTimestampParam == null) {
+      call.respondText(
+        "start_timestamp parameter is required",
+        status = HttpStatusCode.BadRequest,
+        contentType = ContentType.Text.Plain,
+      )
+      return@get
+    }
+
+    if (endTimestampParam == null) {
+      call.respondText(
+        "end_timestamp parameter is required",
+        status = HttpStatusCode.BadRequest,
+        contentType = ContentType.Text.Plain,
+      )
+      return@get
+    }
+
+    // Fetch historical fee estimate based on date
+    logger.info(
+      "Fetching historical fee estimate for start_timestamp: $startTimestampParam to " +
+        "end_timestamp: $endTimestampParam for intervals: $interval seconds",
+    )
+    val feeEstimate = mempoolCollector.getFeeEstimateForTimestampRange(startTimestampParam, endTimestampParam, interval)
+
+    if (feeEstimate == null) {
+      logger.warn(
+        "No historical fee estimates available for start_timestamp $startTimestampParam to " +
+          "end_timestamp: $endTimestampParam for interval: $interval seconds",
+      )
+      call.respondText(
+        "No historical fee estimates available for start_timestamp $startTimestampParam to " +
+          "end_timestamp: $endTimestampParam for interval: $interval seconds",
+        status = HttpStatusCode.ServiceUnavailable,
+        contentType = ContentType.Text.Plain,
+      )
+    } else {
+      var mutableResponse = mutableListOf<FeeEstimateResponse>()
+      logger.info("Transforming historical fee estimates for response")
+      for (estimate in feeEstimate) {
+        val response = transformFeeEstimate(estimate)
+        mutableResponse.add(response)
+      }
+      logger.debug("Returning historical fee estimates")
+      call.respond(mutableResponse)
+    }
+  }
 }

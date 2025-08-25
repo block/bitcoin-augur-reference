@@ -72,6 +72,42 @@ class MempoolCollector(
     return latestFeeEstimate.get()
   }
 
+  fun getFeeEstimateForTimestampRange(start_date: Long, end_date: Long, interval: Int): List<FeeEstimate>? {
+    // Ensure start_date is not after end_date
+    if (start_date > end_date) {
+      logger.warn("Start date is after end date")
+      return null
+    }
+
+    // Initialize result list to store fee estimates
+    val estimates = mutableListOf<FeeEstimate>()
+    var currentDate = start_date
+
+    // Iterate through the date range with the given interval
+    while (currentDate < end_date) {
+      logger.debug("Processing fee estimate for $currentDate")
+      val feeEstimate = getFeeEstimateForTimestamp(currentDate)
+
+      // If fee estimate is non-null and has estimates, merge them
+      if (feeEstimate != null && feeEstimate.estimates.isNotEmpty()) {
+        estimates.add(feeEstimate)
+      } else {
+        logger.debug("No valid fee estimate for $currentDate")
+      }
+
+      currentDate = currentDate + interval
+    }
+
+    // Return null if no estimates were collected
+    if (estimates.isEmpty()) {
+      logger.warn("No fee estimates collected for the date range")
+      return null
+    }
+
+    // Return a FeeEstimate with the aggregated estimates
+    return estimates
+  }
+
   /**
    * Get the fee estimate for specific date
    */
