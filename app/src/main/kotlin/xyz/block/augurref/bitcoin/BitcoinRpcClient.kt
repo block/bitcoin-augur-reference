@@ -59,6 +59,12 @@ class BitcoinRpcClient(private val config: BitcoinRpcConfig) {
           "method" to "getrawmempool",
           "params" to listOf(true),
         ),
+        mapOf(
+          "jsonrpc" to "1.0",
+          "id" to "mempool-info",
+          "method" to "getmempoolinfo",
+          "params" to emptyList<String>(),
+        ),
       ),
     )
 
@@ -91,6 +97,13 @@ class BitcoinRpcClient(private val config: BitcoinRpcConfig) {
       val mempoolResponse: MempoolResponse = mapper.convertValue(results[1], MempoolResponse::class.java)
       if (mempoolResponse.error != null) {
         throw Exception("RPC error (mempool): ${mempoolResponse.error}")
+      }
+      val mempoolInfoResponse: MempoolInfoResponse = mapper.convertValue(results[2], MempoolInfoResponse::class.java)
+      if (mempoolInfoResponse.error != null) {
+        throw Exception("RPC error (mempool-info): ${mempoolInfoResponse.error}")
+      }
+      if (mempoolInfoResponse.result?.loaded == false) {
+        throw Exception("RPC error (mempool-info): mempool is not loaded")
       }
 
       // Convert directly from Bitcoin Core MempoolEntry to Augur MempoolTransaction
@@ -136,5 +149,24 @@ data class BlockchainInfo(
 
 data class BlockchainInfoResponse(
   val result: BlockchainInfo?,
+  val error: Any?,
+)
+
+data class MempoolInfo(
+  val loaded: Boolean,
+  val size: Int,
+  val bytes: Int,
+  val usage: Int,
+  val totalFee: Double,
+  val maxmempool: Int,
+  val mempoolminfee: Double,
+  val minrelaytxfee: Double,
+  val incrementalrelayfee: Double,
+  val unbroadcastcount: Int,
+  val fullrbf: Boolean,
+)
+
+data class MempoolInfoResponse(
+  val result: MempoolInfo?,
   val error: Any?,
 )
